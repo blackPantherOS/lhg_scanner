@@ -66,7 +66,7 @@ if (try_load($module)) {
 use Getopt::Long qw(GetOptions);
 Getopt::Long::Configure qw(gnu_getopt);
 
-$VERSION = "0.5.1";
+$VERSION = "0.5.2";
 # Options from command line in upper case
 $DEBUG = 0;		# run in debug mode
 $SILENT = 0;		# run in batch mode, no user interaction
