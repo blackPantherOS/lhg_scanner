@@ -143,19 +143,20 @@ system ("cat /proc/version > $TMPDIR/version.txt");
 
 sub do_lsusb {
     system ("lsusb > $TMPDIR/lsusb.txt");
-    system ("touch $LOCKDIR/lhg_usb.ok");
+    system ("echo USB_OK > $LOCKDIR/lhg_usb.ok");
 }
 
 sub do_lsusbv {
     system ("lsusb -v > $TMPDIR/lsusb_v.txt 2> $TMPDIR/lsusb_v.err.txt");
-    system ("touch $LOCKDIR/lhg_usbv.ok");
+    system ("echo USBV_OK > $LOCKDIR/lhg_usbv.ok");
 }
 
 # General HW overview
 print " -> general hardware overview \n";
-# important check if previouly freeze PC when usb test is running (Charles K Barcza)
+# important check if previouly freezes PC when usb test is running (Charles K Barcza)
 if ( ! -f ("$LOCKDIR/lhg_usb.lock") ) {
-    system ("touch $LOCKDIR/lhg_usb.lock");
+    system ("echo USB_LOCK_OK > $LOCKDIR/lhg_usb.lock");
+    sleep(3);
     # "First run USB test
     do_lsusb (); 
     do_lsusbv (); 
@@ -228,9 +229,10 @@ if (`cat /proc/cmdline | grep -e LABEL -e install`) {
     system ("touch $TMPDIR/dd.err.txt");
     system ("touch $TMPDIR/dd.txt");
 } else {
-# important check if previouly freeze PC when DD test is running (Charles K Barcza)
+# important check if previouly freezes PC when DD test is running (Charles K Barcza)
 if ( ! -f ("$LOCKDIR/lhg_dd.lock") ) {
-    system ("touch $LOCKDIR/lhg_dd.lock");
+    system ("echo DD_IS_OK > $LOCKDIR/lhg_dd.lock");
+    sleep(3);
     # "First run DD test
     dd_run (); 
 } elsif ( -f ("$LOCKDIR/lhg_dd.lock") and -f ("$LOCKDIR/lhg_dd.ok") ) {
@@ -239,6 +241,7 @@ if ( ! -f ("$LOCKDIR/lhg_dd.lock") ) {
 } else {
     if ( -f ("$LOCKDIR/lhg_dd.lock") and ! -f ("$LOCKDIR/lhg_dd.ok") ) {
         print "A DD error occurred! Skip DD in future...\n";
+	system ("echo 'A error occurred! DD command is freezed' > $TMPDIR/dd.err.txt");
     } else { print "Skipped DD test\n"; }
   }
 }
