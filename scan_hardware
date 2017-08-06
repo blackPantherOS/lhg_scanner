@@ -141,10 +141,39 @@ system ("lsb_release -a > $TMPDIR/lsb_release.txt");
 system ("cat /etc/*-release >> $TMPDIR/lsb_release.txt");
 system ("cat /proc/version > $TMPDIR/version.txt");
 
+sub do_lsusb {
+    system ("lsusb > $TMPDIR/lsusb.txt");
+    system ("touch $LOCKDIR/lhg_usb.ok");
+}
+
+sub do_lsusbv {
+    system ("lsusb -v > $TMPDIR/lsusb_v.txt 2> $TMPDIR/lsusb_v.err.txt");
+    system ("touch $LOCKDIR/lhg_usbv.ok");
+}
+
 # General HW overview
 print " -> general hardware overview \n";
-system ("lsusb > $TMPDIR/lsusb.txt");
-system ("lsusb -v > $TMPDIR/lsusb_v.txt 2> $TMPDIR/lsusb_v.err.txt");
+# important check if previouly freeze PC when usb test is running (Charles K Barcza)
+if ( ! -f ("$LOCKDIR/lhg_usb.lock") ) {
+    system ("touch $LOCKDIR/lhg_usb.lock");
+    # "First run USB test
+    do_lsusb (); 
+    do_lsusbv (); 
+} elsif ( -f ("$LOCKDIR/lhg_usb.lock") ) {
+    if ( -f ("$LOCKDIR/lhg_usb.ok") ) { 
+	do_lsusb (); 
+    } else {
+        print " * A error occurred! Skip 'lsusb' in future...\n";    
+        system ("touch $TMPDIR/lsusb.txt");
+    }
+    if ( -f ("$LOCKDIR/lhg_usbv.ok") ) { 
+	do_lsusbv ();
+    } else {
+        print " * A error occurred! Skip 'lsusb -v' in future...\n";
+        system ("touch $TMPDIR/lsusb_v.txt");
+        system ("touch $TMPDIR/lsusb_v.err.txt");
+    }
+}
 
 # lspci needed to be started with absolute path for some distribution (e.g. OpenSUSE)
 if (-e "/usr/bin/lspci") {
@@ -174,12 +203,11 @@ system ("cat /proc/asound/devices > $TMPDIR/alsa_devices.txt");
 system ("cat /proc/asound/cards  > $TMPDIR/alsa_cards.txt");
 system ("aplay -l > $TMPDIR/aplay.txt");
 
-
 # HDD measurement
 print " -> checking harddisk\n";
 check_drives();
 
-sub do_run {
+sub dd_run {
     if ($available_space > 1073741824/1024*1.5){ # 1.5 ... safety margin	
         system("dd if=/dev/zero of=$TMPDIR/dd_tempfile bs=1M count=1024 conv=fdatasync,notrunc >  $TMPDIR/dd.txt 2> $TMPDIR/dd.err.txt");
         system("rm -f $TMPDIR/dd_tempfile");
@@ -203,13 +231,13 @@ if (`cat /proc/cmdline | grep -e LABEL -e install`) {
 if ( ! -f ("$LOCKDIR/lhg_dd.lock") ) {
     system ("touch $LOCKDIR/lhg_dd.lock");
     # "First run DD test
-    do_run (); 
+    dd_run (); 
 } elsif ( -f ("$LOCKDIR/lhg_dd.lock") and -f ("$LOCKDIR/lhg_dd.ok") ) {
     # "Running in normal but not first time
-    do_run (); 
+    dd_run (); 
 } else {
     if ( -f ("$LOCKDIR/lhg_dd.lock") and ! -f ("$LOCKDIR/lhg_dd.ok") ) {
-        print "$LOCKDIR - A DD error occurred! Skip DD in future...\n";
+        print "A DD error occurred! Skip DD in future...\n";
     } else { print "Skipped DD test\n"; }
   }
 }
