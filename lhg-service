@@ -7,7 +7,7 @@
 
 $sid = $ARGV[0];
 $upload_server="http://library.linux-hardware-guide.com";
-$TMPDIR = "$ENV{HOME}/.tmp";
+$TMPDIR = "$ENV{HOME}/.cache";
 
 # Check for cached uploads - if found upload now
 check_missed_uploads();
