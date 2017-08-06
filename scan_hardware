@@ -74,6 +74,7 @@ $USERID = "";		# LHG userid
 $USERIDDE = "";		# LHG.de userid
 $COMMENTID = "";	# Link with comment
 
+$LOCKDIR = "$ENV{HOME}/.cache";
 $TMPDIR = "$ENV{HOME}/.cache/LHG.".$$;
 
 GetOptions (
@@ -117,8 +118,6 @@ for my $i ("hdparm", "lsusb", "xdg-open", "xinput", "dd", "aplay") {
     }
 }
 print "\n";
-
-exit;
 
 my @allfiles = ("alsa_cards.txt","alsa_devices.txt","aplay.txt","cpuinfo.txt",
                     "dd.err.txt","dd.txt","dmesg.txt","lsb_release.txt","lspci.txt",
@@ -180,6 +179,16 @@ system ("aplay -l > $TMPDIR/aplay.txt");
 print " -> checking harddisk\n";
 check_drives();
 
+sub do_run {
+    if ($available_space > 1073741824/1024*1.5){ # 1.5 ... safety margin	
+        system("dd if=/dev/zero of=$TMPDIR/dd_tempfile bs=1M count=1024 conv=fdatasync,notrunc >  $TMPDIR/dd.txt 2> $TMPDIR/dd.err.txt");
+        system("rm -f $TMPDIR/dd_tempfile");
+	system ("touch $LOCKDIR/lhg_dd.ok");
+    }else{
+        print "Skipping HDD write test due to limited storage capacity\n";
+    }
+
+}
 
 #The HDD write test uses a significant amount of space for its temporary file
 #We skip this test if there is not enough space left on the drive
@@ -190,12 +199,19 @@ if (`cat /proc/cmdline | grep -e LABEL -e install`) {
     system ("touch $TMPDIR/dd.err.txt");
     system ("touch $TMPDIR/dd.txt");
 } else {
-    if ($available_space > 1073741824/1024*1.5){ # 1.5 ... safety margin
-        system("dd if=/dev/zero of=$TMPDIR/dd_tempfile bs=1M count=1024 conv=fdatasync,notrunc >  $TMPDIR/dd.txt 2> $TMPDIR/dd.err.txt");
-        system("rm -f $TMPDIR/dd_tempfile");
-    }else{
-        print "Skipping HDD write test due to limited storage capacity\n";
-    }
+# important check if previouly freeze PC when DD test is running (Charles K Barcza)
+if ( ! -f ("$LOCKDIR/lhg_dd.lock") ) {
+    system ("touch $LOCKDIR/lhg_dd.lock");
+    # "First run DD test
+    do_run (); 
+} elsif ( -f ("$LOCKDIR/lhg_dd.lock") and -f ("$LOCKDIR/lhg_dd.ok") ) {
+    # "Running in normal but not first time
+    do_run (); 
+} else {
+    if ( -f ("$LOCKDIR/lhg_dd.lock") and ! -f ("$LOCKDIR/lhg_dd.ok") ) {
+        print "$LOCKDIR - A DD error occurred! Skip DD in future...\n";
+    } else { print "Skipped DD test\n"; }
+  }
 }
 
 #only possible as root
