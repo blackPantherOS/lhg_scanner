@@ -165,13 +165,14 @@ if ( ! -f ("$LOCKDIR/lhg_usb.lock") ) {
     } else {
         print " * A error occurred! Skip 'lsusb' in future...\n";    
         system ("touch $TMPDIR/lsusb.txt");
+        system ("echo 'A error occured when running lsusb command' > $TMPDIR/lsusb_v.err.txt");
     }
     if ( -f ("$LOCKDIR/lhg_usbv.ok") ) { 
 	do_lsusbv ();
     } else {
         print " * A error occurred! Skip 'lsusb -v' in future...\n";
         system ("touch $TMPDIR/lsusb_v.txt");
-        system ("touch $TMPDIR/lsusb_v.err.txt");
+        system ("echo 'A error occured when running lsusb -v command' >> $TMPDIR/lsusb_v.err.txt");
     }
 }
 
